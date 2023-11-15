@@ -8,15 +8,16 @@ namespace Contraseña
     using System.Text;
     using System.Diagnostics;
     using System.Threading;
+
+    //Usamos esta clase para crear las funciones que vamos a usar en el programa
     public static class Funciones
-    {
+    {   
+        // Devuelve si un valor tipo int dado está entre dos números concretos
         public static Boolean inRange(this int valor, int valMin, int valMax)
         {
             return valor >= valMin && valor <= valMax;
         }
     }
-
-    
 
 
     class Program
@@ -64,6 +65,7 @@ namespace Contraseña
                         }
                     }
                     Console.WriteLine(newPass);
+                    // Realizamos la división del total del número de líneas y los pasamos a variables
                     division = numeroLineas / 8;
                     int parte2 = division * 2;
                     int parte3 = division * 3;
@@ -71,21 +73,28 @@ namespace Contraseña
                     int parte5 = division * 5;
                     int parte6 = division * 6;   
                     int parte7 = division * 7;
-                    
+                    //Primer hilo
                     Thread hilo1 = new Thread(() => threadPassword(0, division, path, newPass));
                     hilo1.Start();
+                    //Segundo hilo
                     Thread hilo2 = new Thread(() => threadPassword(division, parte2, path, newPass));
                     hilo2.Start();
+                    //Tercer hilo
                     Thread hilo3 = new Thread(() => threadPassword(parte2, parte3, path, newPass));
                     hilo3.Start();
+                    //Cuarto hilo
                     Thread hilo4 = new Thread(() => threadPassword(parte3, parte4, path, newPass));
                     hilo4.Start();
+                    //Quinto hilo
                     Thread hilo5 = new Thread(() => threadPassword(parte4, parte5, path, newPass));
                     hilo5.Start();
+                    //Sexto hilo
                     Thread hilo6 = new Thread(() => threadPassword(parte5, parte6, path, newPass));
                     hilo6.Start();
+                    //Séptimo hilo
                     Thread hilo7 = new Thread(() => threadPassword(parte6, parte7, path, newPass));
                     hilo7.Start();
+                    //Octavo hilo
                     Thread hilo8 = new Thread(() => threadPassword(parte7, numeroLineas, path, newPass));
                     hilo8.Start();
 
@@ -97,7 +106,7 @@ namespace Contraseña
                 Console.WriteLine("Ocurrió un error al leer el archivo: " + e.Message);
             }
 
-
+            // Código de cada hilo: Recorre una parte concreta del archivo y va codificando y comparando con una cadena dada
             void threadPassword(int start, int finish, string path, string newpass)
             {
                 sw.Start();
@@ -109,11 +118,13 @@ namespace Contraseña
                     string newPass2;
                     while ((linea2 = sr2.ReadLine()) != null) // recorremos el archivo línea a línea de nuevo
                     {
+                        // Si el número de línea está en el rango indicado realizamos la codificación y comparación
                         if (numeroLineaActual.inRange(start, finish)) 
                         {
                             byte[] byteLinea2 = Encoding.UTF8.GetBytes(linea2);
                             using (SHA256 sha256 = SHA256.Create())
                             {
+                                //Codificamos la línea actual
                                 byte[] hasBytes2 = sha256.ComputeHash(byteLinea2);
                                 StringBuilder sb2 = new StringBuilder();
                                 for (int i = 0; i < hasBytes2.Length; i++)
@@ -121,6 +132,7 @@ namespace Contraseña
                                     sb2.Append(hasBytes2[i].ToString("x2"));
                                 }
                                 newPass2 = sb2.ToString();
+                                //Comparamos la línea actual codificada con la contraseña dada
                                 if (newPasst == newPass2)
                                 {
                                     sw.Stop();
