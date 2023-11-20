@@ -8,10 +8,12 @@ namespace Contraseña
     using System.Text;
     using System.Diagnostics;
     using System.Threading;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
 
     //Usamos esta clase para crear las funciones que vamos a usar en el programa
     public static class Funciones
-    {   
+    {
         // Devuelve si un valor tipo int dado está entre dos números concretos
         public static Boolean inRange(this int valor, int valMin, int valMax)
         {
@@ -66,37 +68,50 @@ namespace Contraseña
                     }
                     Console.WriteLine(newPass);
                     // Realizamos la división del total del número de líneas y los pasamos a variables
-                    division = numeroLineas / 8;
+                    division = numeroLineas / 6;
                     int parte2 = division * 2;
                     int parte3 = division * 3;
                     int parte4 = division * 4;
                     int parte5 = division * 5;
-                    int parte6 = division * 6;   
-                    int parte7 = division * 7;
+                    bool encontrado = false;
+
+
+
+
                     //Primer hilo
-                    Thread hilo1 = new Thread(() => threadPassword(0, division, path, newPass));
+                    Thread hilo1 = new Thread(() => encontrado = threadPassword(0, division, path, newPass));
                     hilo1.Start();
                     //Segundo hilo
-                    Thread hilo2 = new Thread(() => threadPassword(division, parte2, path, newPass));
+                    Thread hilo2 = new Thread(() => encontrado = threadPassword(division, parte2, path, newPass));
                     hilo2.Start();
                     //Tercer hilo
-                    Thread hilo3 = new Thread(() => threadPassword(parte2, parte3, path, newPass));
+                    Thread hilo3 = new Thread(() => encontrado = threadPassword(parte2, parte3, path, newPass));
                     hilo3.Start();
                     //Cuarto hilo
-                    Thread hilo4 = new Thread(() => threadPassword(parte3, parte4, path, newPass));
+                    Thread hilo4 = new Thread(() => encontrado = threadPassword(parte3, parte4, path, newPass));
                     hilo4.Start();
-                    //Quinto hilo
-                    Thread hilo5 = new Thread(() => threadPassword(parte4, parte5, path, newPass));
+                    Thread hilo5 = new Thread(() => encontrado = threadPassword(parte4, parte5, path, newPass));
                     hilo5.Start();
-                    //Sexto hilo
-                    Thread hilo6 = new Thread(() => threadPassword(parte5, parte6, path, newPass));
+                    Thread hilo6 = new Thread(() => encontrado = threadPassword(parte5, numeroLineas, path, newPass));
                     hilo6.Start();
-                    //Séptimo hilo
-                    Thread hilo7 = new Thread(() => threadPassword(parte6, parte7, path, newPass));
+
+                    List<string> listArchivo = archivoLista();
+
+
+                    // Hilos inversos
+                    Thread hilo7 = new Thread(() => encontrado = threadPasswordInverso(parte5, numeroLineas, path, newPass, listArchivo));
                     hilo7.Start();
-                    //Octavo hilo
-                    Thread hilo8 = new Thread(() => threadPassword(parte7, numeroLineas, path, newPass));
+                    Thread hilo8 = new Thread(() => encontrado = threadPasswordInverso(parte4, parte5, path, newPass, listArchivo));
                     hilo8.Start();
+                    Thread hilo9 = new Thread(() => encontrado = threadPasswordInverso(parte3, parte4, path, newPass, listArchivo));
+                    hilo9.Start();
+                    Thread hilo10 = new Thread(() => encontrado = threadPasswordInverso(parte2, parte3, path, newPass, listArchivo));
+                    hilo10.Start();
+                    Thread hilo11 = new Thread(() => encontrado = threadPasswordInverso(division, parte2, path, newPass, listArchivo));
+                    hilo11.Start();
+                    Thread hilo12 = new Thread(() => encontrado = threadPasswordInverso(0, division, path, newPass, listArchivo));
+                    hilo12.Start();
+
 
 
                 }
@@ -106,12 +121,14 @@ namespace Contraseña
                 Console.WriteLine("Ocurrió un error al leer el archivo: " + e.Message);
             }
 
+
             // Código de cada hilo: Recorre una parte concreta del archivo y va codificando y comparando con una cadena dada
-            void threadPassword(int start, int finish, string path, string newpass)
+            bool threadPassword(int start, int finish, string path, string newpass)
             {
                 sw.Start();
                 using (StreamReader sr2 = new StreamReader(path))
                 {
+                    bool result = false;
                     int numeroLineaActual = 0;
                     string newPasst = newpass;
                     string linea2;
@@ -119,7 +136,7 @@ namespace Contraseña
                     while ((linea2 = sr2.ReadLine()) != null) // recorremos el archivo línea a línea de nuevo
                     {
                         // Si el número de línea está en el rango indicado realizamos la codificación y comparación
-                        if (numeroLineaActual.inRange(start, finish)) 
+                        if (numeroLineaActual.inRange(start, finish))
                         {
                             byte[] byteLinea2 = Encoding.UTF8.GetBytes(linea2);
                             using (SHA256 sha256 = SHA256.Create())
@@ -136,20 +153,73 @@ namespace Contraseña
                                 if (newPasst == newPass2)
                                 {
                                     sw.Stop();
-                                    Console.WriteLine("La contraseña: ");
-                                    Console.WriteLine(newPass2);
-                                    Console.WriteLine("y la contraseña: ");
-                                    Console.WriteLine(newPasst);
-                                    Console.WriteLine("coinciden, la contraseña ha sido hackeada! ");                                  
+                                    Console.WriteLine("Hackeado por hilo normal");
+                                    Console.WriteLine("La contraseña es " + newPass2);
                                     Console.WriteLine(sw.Elapsed.ToString());
+                                    result = true;
                                     break;
-                                }                              
+                                }
                             }
                         }
                         numeroLineaActual++;
                     }
+                    return result;
                 }
             }
+            // Código de los hilos inversos: Recorre una parte concreta del archivo y va codificando y comparando con una cadena dada (no mejora la velocidad)
+            bool threadPasswordInverso(int start, int finish, string path, string newpass, List<String> lineas)
+            {
+                string newPass2 = "";
+                bool result = false;
+                sw.Start();
+                // Recorre las líneas en orden inverso y procesa las que están en el rango deseado
+                for (int i = lineas.Count - 1; i >= 0; i--)
+                {
+                    if (i + 1 >= start && i + 1 <= finish)
+                    {
+                        // Procesa la línea actual
+                        string linea2 = lineas[i];
+                        byte[] byteLinea2 = Encoding.UTF8.GetBytes(linea2);
+                        using (SHA256 sha256 = SHA256.Create())
+                        {
+                            //Codificamos la línea actual
+                            byte[] hasBytes2 = sha256.ComputeHash(byteLinea2);
+                            StringBuilder sb2 = new StringBuilder();
+                            for (int x = 0; x < hasBytes2.Length; x++)
+                            {
+                                sb2.Append(hasBytes2[x].ToString("x2"));
+                            }
+                            newPass2 = sb2.ToString();
+                            //Comparamos la línea actual codificada con la contraseña dada
+                            if (newPass == newPass2)
+                            {
+                                sw.Stop();
+                                Console.WriteLine("Hackeado por hilo inverso");
+                                Console.WriteLine("La contraseña es " +newPass2);
+                                Console.WriteLine(sw.Elapsed.ToString());
+                                result = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                return result;
+            }
+
+            List<String> archivoLista()
+            {
+                using (StreamReader sr2 = new StreamReader(@"D:\Programacion\Segundo\C#\Contraseña\2151220-passwords.txt"))
+                {
+                    // Lee todas las líneas del archivo
+                    List<string> lineas = new List<string>();
+                    while (!sr2.EndOfStream)
+                    {
+                        lineas.Add(sr2.ReadLine());
+                    }
+                    return lineas;
+                }
+
+            }
         }
-    }     
+    }
 }
