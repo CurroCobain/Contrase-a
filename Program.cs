@@ -28,7 +28,8 @@
             int line = 0; // variable para contar el número de línea del archivo por la que vamos
             String pass = ""; // variable para encontrar una contraseña
             String newPass = "";//variable para asignar la contraseña encriptada
-            Stopwatch sw = new Stopwatch();
+            Stopwatch sw1 = new Stopwatch();
+            Stopwatch sw2 = new Stopwatch();
             int division = 0;
             bool encontrado = false;
 
@@ -74,7 +75,7 @@
                         Thread hilo = new Thread(() => encontrado = threadPassword(parte * i, parte * (i + 1), path, newPass,listArchivo));
                         hilo.Start();
                     }
-
+                    //Creamos 8 hilos inversos
                     for (int x = 8; x >= 0; x--)
                     {
                         int parte = numeroLineas / 8;
@@ -88,14 +89,14 @@
                 Console.WriteLine("Ocurrió un error al leer el archivo: " + e.Message);
             }
 
-            // Código de cada hilo: Recorre una parte concreta del archivo y va codificando y comparando con una cadena dada
+            // Código de cada hilo normal : Recorre una parte concreta del archivo y va codificando y comparando con una cadena dada
             bool threadPassword(int start, int finish, string path, string newpass, List<String> lineas)
             {
                 string newPass2 = "";
                 bool result = false;
-                sw.Start();
+                sw1.Start();
                 // Recorre las líneas y procesa las que están en el rango deseado
-                for (int i = 0; i <= lineas.Count; i++)
+                for (int i = -1; i <= lineas.Count - 1; i++)
                 {
                     if (i >= start && i + 1<= finish)
                     {
@@ -115,10 +116,10 @@
                             //Comparamos la línea actual codificada con la contraseña dada
                             if (newPass == newPass2)
                             {
-                                sw.Stop();
+                                sw1.Stop();
                                 Console.WriteLine("Hackeado por hilo normal");
                                 Console.WriteLine("La contraseña es " + newPass2);
-                                Console.WriteLine(sw.Elapsed.ToString());
+                                Console.WriteLine(sw1.Elapsed.ToString());
                                 result = true;
                                 return result;
                             }
@@ -132,7 +133,7 @@
             {
                 string newPass2 = "";
                 bool result = false;
-                sw.Start();
+                sw2.Start();
                 // Recorre las líneas en orden inverso y procesa las que están en el rango deseado
                 for (int i = lineas.Count - 1; i >= 0; i--)
                 {
@@ -154,10 +155,10 @@
                             //Comparamos la línea actual codificada con la contraseña dada
                             if (newPass == newPass2)
                             {
-                                sw.Stop();
+                                sw2.Stop();
                                 Console.WriteLine("Hackeado por hilo inverso");
                                 Console.WriteLine("La contraseña es " +newPass2);
-                                Console.WriteLine(sw.Elapsed.ToString());
+                                Console.WriteLine(sw2.Elapsed.ToString());
                                 result = true;
                                 return result;
                             }
